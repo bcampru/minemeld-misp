@@ -74,5 +74,5 @@ attributes:
   confidence: 70
   # if not specified in the event, default is white for
   # this prototype
-  share_leve: white
+  share_level: white
 ```
