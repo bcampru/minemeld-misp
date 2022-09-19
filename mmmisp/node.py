@@ -49,7 +49,8 @@ class Miner(BasePollerFT):
         self.filters = self.config.get('filters', None)
 
         # option for enabling client cert, default disabled
-        self.client_cert_required = self.config.get('client_cert_required', False)
+        self.client_cert_required = self.config.get(
+            'client_cert_required', False)
         if self.client_cert_required:
             self.key_file = os.path.join(
                 os.environ['MM_CONFIG_DIR'],
@@ -126,7 +127,8 @@ class Miner(BasePollerFT):
 
     def _build_iterator(self, now):
         if self.automation_key is None:
-            raise RuntimeError('{} - MISP Automation Key not set'.format(self.name))
+            raise RuntimeError(
+                '{} - MISP Automation Key not set'.format(self.name))
 
         if self.url is None:
             raise RuntimeError('{} - MISP URL not set'.format(self.name))
@@ -149,7 +151,8 @@ class Miner(BasePollerFT):
                 mo = self.datefrom_re.match(df)
                 if mo is not None:
                     deltad = int(mo.group(1))
-                    df = datetime.utcfromtimestamp(now/1000 - 86400 * deltad).strftime('%Y-%m-%d')
+                    df = datetime.utcfromtimestamp(
+                        now/1000 - 86400 * deltad).strftime('%Y-%m-%d')
 
                 filters['datefrom'] = df
 
@@ -208,7 +211,13 @@ class Miner(BasePollerFT):
             if tname.startswith('tlp:'):
                 base_value['share_level'] = tname[4:]
 
-        attributes = event.get('Attribute', [])
+        attributes_object = map(
+            lambda x: x['Attribute'], event.get('Object', []))
+        attributes_standard = event.get('Attribute', [])
+        if len(attributes_object) > 0:
+            attributes_object = attributes_object[0]
+        attributes = attributes_standard + attributes_object
+
         for a in attributes:
             if self.honour_ids_flag:
                 to_ids = a.get('to_ids', False)
@@ -217,7 +226,8 @@ class Miner(BasePollerFT):
 
             indicator = a.get('value', None)
             if indicator is None:
-                LOG.error('{} - attribute with no value: {!r}'.format(self.name, a))
+                LOG.error(
+                    '{} - attribute with no value: {!r}'.format(self.name, a))
                 continue
 
             iv = {}
@@ -258,21 +268,25 @@ class Miner(BasePollerFT):
                 # If we know the 2nd indicator type, clone the iv as it's the same event, and append it it to results
                 itype2 = _MISP_TO_MINEMELD.get(itype[9:], None)
                 if itype2 is not None:
-                    iv2 = copy.deepcopy(iv)  # Copy IV since it's the same event, just different type
+                    # Copy IV since it's the same event, just different type
+                    iv2 = copy.deepcopy(iv)
                     iv2['type'] = itype2
-                    result.append([indicator2, iv2])  # Append our second indicator
+                    # Append our second indicator
+                    result.append([indicator2, iv2])
 
             else:
                 iv['type'] = _MISP_TO_MINEMELD.get(itype, None)
 
             if iv['type'] is None:
-                LOG.error('{} - Unhandled indicator type: {!r}'.format(self.name, a))
+                LOG.error(
+                    '{} - Unhandled indicator type: {!r}'.format(self.name, a))
                 continue
 
             result.append([indicator, iv])
 
             if self.indicator_types is not None:
-                result = [[ti, tiv] for ti, tiv in result if tiv['type'] in self.indicator_types]
+                result = [[ti, tiv]
+                          for ti, tiv in result if tiv['type'] in self.indicator_types]
 
         return result
 
